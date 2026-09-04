@@ -54,6 +54,6 @@ Two layers with different lifetimes:
 - **Stable (design document — never pruned)**: Goal, Acceptance, Decisions (rationale where a plausible wrong choice exists), Non-goals, Scope, Plan, Validate, Risks/Open.
 - **Volatile (runtime state — replace stale, don't accumulate)**: status/next, session progress, Execution, Deviations, Review, Metrics, Current Blocker.
 
-Rules: `path:symbol` anchors; never paste source excerpts, chain-of-thought, or discarded alternatives; machine fields (frontmatter keys, status values, section titles) in English, prose may use the team language, anchors verbatim; a blocker records only evidence, conflict, and the smallest decision needed.
+Rules: `path:symbol` anchors; never paste source excerpts, chain-of-thought, or a discarded-alternatives diary; record in `Decisions`/`delta_justification` the materially relevant competing mechanisms and the evidence that rejects them (so REVIEW can see what was surveyed); machine fields (frontmatter keys, status values, section titles) in English, prose may use the team language, anchors verbatim; a blocker records only evidence, conflict, and the smallest decision needed.
 
 Append one compact metric line per worker turn under `# Metrics` — friction detection and threshold calibration, not token accounting. `result` uses the fixed vocabulary (PLAN `READY|BLOCKED|REPLAN-READY`, EXECUTE `paused|IMPLEMENTED|BLOCKED`, REVIEW `clean|BLOCKED`); `friction` is a stable, dedupe-able label. Use `?` when a value is not cheaply available; never run tools merely to collect metrics.

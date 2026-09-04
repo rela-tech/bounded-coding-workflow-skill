@@ -1,13 +1,17 @@
 # ROLE=PLAN
 
-Goal: spend reasoning only until implementation becomes bounded; produce a handoff that is both the design document and an execution contract a low-tier executor can translate without designing. Do not modify product code.
+Goal: act as the architect — investigate the full affected design space and its boundaries until the design is confident, then hand off a bounded handoff that is both the design document and an execution contract a low-tier executor can translate without designing. Do not modify product code.
+
+Core principles:
+- **PLAN minimizes implementation surface, not investigation surface.** Investigate broadly across materially relevant architecture, then hand off only the bounded surface the DoD requires. Investigate broadly; write narrowly.
+- **User interaction is cheapest in PLAN.** Confirm requirements, product behavior, contract shapes, and scope tradeoffs with the user *before* finalizing the plan — do not guess or defer them to EXECUTE. After the plan is approved, the execution window targets zero user interventions.
 
 ## Initial PLAN
 
 If HANDOFF does not exist:
-1. Read the task request; restate Goal + Acceptance (the DoD).
+1. Read the task request; restate Goal + Acceptance (the DoD). If any requirement, product behavior, contract shape, or scope tradeoff is ambiguous or user-dependent, ask the user now — this is the cheapest point to correct course. Confirm, don't guess; don't defer ambiguity to EXECUTE.
 2. Create HANDOFF from `assets/handoff-template.md`.
-3. Inspect the smallest repo surface needed to identify existing responsibilities (`path:symbol`) and a validation path. Exploration here is the deliberate, expensive phase — invest in it; do not push discovery onto EXECUTE.
+3. Inspect the **materially relevant** repo surface needed to understand existing ownership, call paths, dependency boundaries, compatibility constraints, available abstractions, and realistic alternative designs. Exploration here is the deliberate, expensive phase — invest in it and do not push discovery onto EXECUTE. Avoid unrelated exploration, but do not stop merely because one feasible implementation has been found.
 4. Derive `minimal_surface` from the DoD **before writing the plan** — `capability`, `new_responsibilities`, `reused_responsibilities`, `explicitly_unneeded`. Existing responsibility stays reused by default; replacing or duplicating an existing responsibility requires repo evidence (`path:symbol`) that it cannot satisfy an acceptance criterion.
 5. Write the Plan, then `plan_surface` and a `delta_justification` for every material delta. Organize steps into **session-sized segments** (`[s<k>]`), each one EXECUTE session's worth; prefer vertical segments (end-to-end deliverable). Every step carries: a fully-locatable repo-relative anchor (`path:symbol` — never a bare file name, especially for cross-module symbols, since a pure EXECUTE locates files only by the anchor), intended behavior, **edge-case defaults** (failure/empty/error handling), and the acceptance bullet it satisfies (`[A1]`…`[An]`) so EXECUTE can verify completion against the DoD. The plan is the only place EXECUTE may take behavior from.
 6. Check the scope gate:
@@ -29,23 +33,24 @@ If yes to either, deepen the step (or move the choice into Non-goals/Risks) — 
 If HANDOFF exists and routes to PLAN (including `BLOCKED -> PLAN`):
 1. Read the current handoff first, especially `Current Blocker`, `scope_decision`, and session progress.
 2. Reuse prior PLAN context, but re-check executor/reviewer evidence against the repo.
-3. Investigate only the smallest surface needed to resolve the blocker.
+3. Investigate the blocker in its materially relevant context — enough to see the whole affected boundary, not just the local patch — but reuse settled exploration; do not redo it.
 4. Revise planner-owned sections; clear the blocker when resolved. A revision (format migration, re-segmentation, deepening steps) is a replan, not a fresh PLAN — do not redo settled exploration.
 5. Any enlargement beyond the already `approved_surface` re-enters the scope gate: new `scope_decision` + `next=USER`, unless backed by `path:symbol` evidence. Envelope exceeded → re-plan the remainder within the same approved surface; align with the user (plan-window activity) only if the surface or envelope itself must change.
 
 ## Stop rule
 
-Stop exploration when:
+Stop exploring the design space when all of the following hold (the survey is complete; further exploration has diminishing returns):
 - goal/acceptance are concrete;
 - `minimal_surface` is derived from the DoD and `plan_surface` carries no unapproved delta;
 - every material implementation step has a repo anchor or clearly identified new location, plus behavior and edge-case defaults;
 - relevant contracts/ownership are known;
 - validation is specified per segment;
 - remaining choices are local (`U<=1`);
+- no unexamined adjacent mechanism or plausible alternative is likely to materially change ownership, architecture, compatibility, or the execution surface;
 - the mechanical-executor self-test passes.
 
 Then set `status=READY`, `next=EXECUTE`; the envelope is confirmed with the user at plan approval.
 
-If an engineering decision remains at `U>=2`, continue only while targeted investigation is likely to resolve it. Otherwise record the smallest unresolved decision and block. Use `next=USER` when only the user/external environment can resolve it.
+If an engineering decision remains at `U>=2`, continue investigating while it is likely to resolve the uncertainty. When the unresolved decision is a user preference or requirement, ask the user directly — confirm during PLAN rather than deferring. Otherwise record the smallest unresolved decision and block. Use `next=USER` when only the user/external environment can resolve it outside the planning window.
 
-Do not implement code. Do not save an exploration diary.
+Do not implement code. Investigate broadly, but do not save an exploration diary (no stream-of-consciousness, no enumerated dead-ends) — leave architecture-relevant evidence (competing mechanisms examined and why rejected) in `Facts`/`Decisions`/`delta_justification` so REVIEW can see what was surveyed.

@@ -14,9 +14,9 @@ Do not use it for a single-point bug fix, one-file addition, or other local chan
 
 The workflow has three roles:
 
-- `PLAN` investigates the smallest relevant repository surface, defines the acceptance criteria and scope, and produces a handoff that is safe for a low-authority executor to follow.
-- `EXECUTE` implements only the approved plan, validates it, and records progress and deviations. It escalates rather than making cross-boundary design choices.
-- `REVIEW` independently checks the implementation, acceptance criteria, scope compliance, and validation evidence.
+- `PLAN` is the architect. It uses the smallest relevant repository evidence to establish responsibility boundaries, acceptance criteria, design decisions, scope, validation, and an execution contract that a low-authority worker can follow. Repository investigation is evidence for architecture, not the role's end goal.
+- `EXECUTE` is the low-authority implementation worker. It mechanically implements only the approved plan, validates it, and records progress and deviations. It escalates rather than making cross-boundary design choices.
+- `REVIEW` is the independent verifier: it checks the implementation, acceptance criteria, scope compliance, and validation evidence without modifying product code.
 
 Normal flow:
 
@@ -56,7 +56,7 @@ Set `review: skip` in the handoff only when independent review is explicitly unn
 
 ## Handoff contract
 
-The handoff is both the design record and the contract between workers. Its stable sections record the goal, acceptance criteria, facts, decisions, non-goals, scope, plan, validation approach, and risks. Its volatile sections carry the current status, execution results, deviations, review result, blocker, and lightweight metrics.
+The handoff is both the architect's design record and the execution contract between workers. Its stable sections record the goal, acceptance criteria, facts, decisions, non-goals, scope, plan, validation approach, and risks. Its volatile sections carry the current status, execution results, deviations, review result, blocker, and lightweight metrics.
 
 The plan is segmented into executor-sized units and each step includes a repository-relative `path:symbol` anchor, intended behavior, edge-case default, and an acceptance tag such as `[A1]`. Executors must stay within `approved_surface`; a new subsystem or durable schema/format change always routes to the user for approval.
 
