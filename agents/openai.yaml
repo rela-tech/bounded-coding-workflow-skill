@@ -1,0 +1,5 @@
+interface:
+  display_name: "Bounded Coding Workflow"
+  short_description: "Bounded PLAN, EXECUTE, REVIEW workers via a shared handoff"
+policy:
+  allow_implicit_invocation: false
