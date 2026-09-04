@@ -54,6 +54,54 @@ $bounded-coding-workflow ROLE=REVIEW HANDOFF=.agent_worker/tasks/<task>.md
 
 只有在明确不需要独立审查时，才将交接文件中的 `review: skip`；默认值是聚焦式审查 `focused`。
 
+## 安装
+
+本仓库是可移植的 Agent Skill 包：根目录的 `SKILL.md` 及其引用资源可原样用于 Codex、Claude Code、GitHub Copilot 和 DeepSeek Harness。建议只克隆一份源码，再将其链接到你所使用工具的用户级 Skill 目录：
+
+```bash
+git clone https://github.com/rela-tech/bounded-coding-workflow-skill.git \
+  ~/.agent-skills/bounded-coding-workflow
+
+mkdir -p ~/.codex/skills ~/.claude/skills ~/.agents/skills ~/.dsh/skills
+ln -s ~/.agent-skills/bounded-coding-workflow ~/.codex/skills/bounded-coding-workflow
+ln -s ~/.agent-skills/bounded-coding-workflow ~/.claude/skills/bounded-coding-workflow
+ln -s ~/.agent-skills/bounded-coding-workflow ~/.agents/skills/bounded-coding-workflow
+ln -s ~/.agent-skills/bounded-coding-workflow ~/.dsh/skills/bounded-coding-workflow
+```
+
+只为实际使用的工具创建对应链接即可。各工具的全局安装位置如下：
+
+| Harness | 个人全局 Skill 目录 |
+| --- | --- |
+| Codex | `~/.codex/skills/bounded-coding-workflow` |
+| Claude Code | `~/.claude/skills/bounded-coding-workflow` |
+| GitHub Copilot | `~/.agents/skills/bounded-coding-workflow`（或 `~/.copilot/skills/bounded-coding-workflow`） |
+| DeepSeek Harness | `~/.dsh/skills/bounded-coding-workflow` |
+
+在 Windows 或无法使用符号链接的环境中，改为将克隆目录复制到相应目标目录；更新源码后需再次复制。安装后请开启新的 Codex 或 Copilot 会话；Claude Code 会实时侦测既有 Skill 目录中的改动，但如果 `~/.claude/skills` 是新建的顶层目录，仍需重启。
+
+可选文件 `agents/openai.yaml` 是 Codex 元数据，其他 harness 会忽略它。不要移除 `SKILL.md`、`assets/` 或 `references/`，它们都属于共享的 Skill 包。
+
+## 更新与版本
+
+若使用符号链接安装，请更新共享 clone，然后在对应 harness 中开启新会话：
+
+```bash
+git -C ~/.agent-skills/bounded-coding-workflow pull --ff-only
+```
+
+若使用复制安装，先更新 clone，再将整个 Skill 目录复制到各个目标目录。不要直接编辑安装副本；应在 clone 中修改、提交，然后更新或重新复制。
+
+使用 Git tag 作为唯一版本来源。当前版本为 `v0.0.3`，仍处于 pre-1.0 阶段，在 `v1.0.0` 前不承诺兼容性。此阶段中，措辞或不改变行为的修正发布 patch 版本；工作流或协议的实质性变更发布 minor 版本。达到 `v1.0.0` 后遵循语义化版本：兼容修复使用 patch、兼容新增使用 minor、不兼容协议变更使用 major。需要可复现行为的使用者应 clone 固定 tag，而不是默认分支：
+
+```bash
+git clone --branch v0.0.3 --depth 1 \
+  https://github.com/rela-tech/bounded-coding-workflow-skill.git \
+  ~/.agent-skills/bounded-coding-workflow
+```
+
+无需在 `SKILL.md` 中重复维护版本号，发布 tag 是权威来源。每次发布 tag 时请创建带简短说明的 GitHub Release，方便使用者了解变更与升级方式。
+
 ## 交接文件契约
 
 交接文件既是架构师的设计记录，也是角色之间的执行契约。其中的稳定部分记录目标、验收条件、事实、决策、非目标、范围、计划、验证方式和风险；易变部分记录当前状态、执行结果、偏差、审查结果、阻塞项和轻量指标。

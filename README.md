@@ -54,6 +54,54 @@ $bounded-coding-workflow ROLE=REVIEW HANDOFF=.agent_worker/tasks/<task>.md
 
 Set `review: skip` in the handoff only when independent review is explicitly unnecessary; otherwise the default is `focused` review.
 
+## Installation
+
+This repository is a portable Agent Skill bundle: its root `SKILL.md` and the resources it references work unchanged with Codex, Claude Code, GitHub Copilot, and DeepSeek Harness. Clone one shared copy, then link it into the user-level skills directory for each tool you use:
+
+```bash
+git clone https://github.com/rela-tech/bounded-coding-workflow-skill.git \
+  ~/.agent-skills/bounded-coding-workflow
+
+mkdir -p ~/.codex/skills ~/.claude/skills ~/.agents/skills ~/.dsh/skills
+ln -s ~/.agent-skills/bounded-coding-workflow ~/.codex/skills/bounded-coding-workflow
+ln -s ~/.agent-skills/bounded-coding-workflow ~/.claude/skills/bounded-coding-workflow
+ln -s ~/.agent-skills/bounded-coding-workflow ~/.agents/skills/bounded-coding-workflow
+ln -s ~/.agent-skills/bounded-coding-workflow ~/.dsh/skills/bounded-coding-workflow
+```
+
+Install only the links for tools you use. The target directories are:
+
+| Harness | Personal, global skill directory |
+| --- | --- |
+| Codex | `~/.codex/skills/bounded-coding-workflow` |
+| Claude Code | `~/.claude/skills/bounded-coding-workflow` |
+| GitHub Copilot | `~/.agents/skills/bounded-coding-workflow` (or `~/.copilot/skills/bounded-coding-workflow`) |
+| DeepSeek Harness | `~/.dsh/skills/bounded-coding-workflow` |
+
+On Windows, or where symbolic links are unavailable, copy the cloned directory to the relevant target instead. Re-run the copy after updating the clone. Start a new Codex or Copilot session after installation; Claude Code detects changes in existing skill directories live, although creating `~/.claude/skills` itself requires a restart.
+
+The optional `agents/openai.yaml` file is Codex metadata. Other harnesses ignore it; do not remove `SKILL.md`, `assets/`, or `references/`, because they are part of the shared skill bundle.
+
+## Updating and versioning
+
+For a symlink installation, update the shared clone and start a new session in the applicable harness:
+
+```bash
+git -C ~/.agent-skills/bounded-coding-workflow pull --ff-only
+```
+
+For a copied installation, update the clone and copy the skill directory to each target again. Do not edit the installed copy: make changes in the clone, commit them, and then update or re-copy it.
+
+Use Git tags as the single version source. The current release is `v0.0.3`, which is pre-1.0: compatibility is not guaranteed until `v1.0.0`. Until then, use patch releases for wording or non-behavioral corrections and minor releases for material workflow or protocol changes. After `v1.0.0`, follow semantic versioning: patch for compatible fixes, minor for compatible additions, and major for incompatible protocol changes. Consumers who need reproducible behavior should clone a tag instead of the default branch:
+
+```bash
+git clone --branch v0.0.3 --depth 1 \
+  https://github.com/rela-tech/bounded-coding-workflow-skill.git \
+  ~/.agent-skills/bounded-coding-workflow
+```
+
+There is no need to duplicate the version in `SKILL.md`; the release tag is authoritative. Add a GitHub Release with concise notes for every published tag so users can see the change and upgrade guidance.
+
 ## Handoff contract
 
 The handoff is both the architect's design record and the execution contract between workers. Its stable sections record the goal, acceptance criteria, facts, decisions, non-goals, scope, plan, validation approach, and risks. Its volatile sections carry the current status, execution results, deviations, review result, blocker, and lightweight metrics.
