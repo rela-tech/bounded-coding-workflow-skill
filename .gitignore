@@ -1,0 +1,26 @@
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor and IDE settings
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local agent and task runtime state
+.agent_worker/
+.agents/
+.codex/
+
+# Generated files, logs, and temporary artifacts
+*.log
+*.tmp
+*.bak
+tmp/
+temp/
+coverage/
+dist/
+build/

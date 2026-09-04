@@ -2,6 +2,8 @@
 
 `bounded-coding-workflow` is a multi-session protocol for splitting a coding task into deliberate planning, mechanical execution, and optional independent review. It keeps the durable task state in a compact, repository-local handoff file so each worker can continue without relying on prior chat context.
 
+中文版请见 [README.zh-CN.md](README.zh-CN.md)。
+
 ## When to use it
 
 Use this workflow when separating uncertainty reduction from implementation and review will lower the total cost of finishing a task. Typical candidates include changes with several files, unclear existing ownership, or meaningful regression risk.
