@@ -14,7 +14,11 @@ session: 0/N          # consumed EXECUTE sessions (k of N budget). Only EXECUTE 
 <concise intended outcome and material constraints>
 
 # Acceptance
-- <observable criterion>
+| ID | Required condition and action | Observable evidence | Blocking |
+| --- | --- | --- | --- |
+| A1 | <condition -> action> | <outcome that proves the behavior> | yes |
+
+Optional test-writing suggestions are not extra acceptance requirements.
 
 # Facts
 - `<path>:<symbol>` — <verified implementation-relevant fact>
@@ -41,6 +45,14 @@ scope_decision:
   reason: <one line>
   approved_surface: <the surface EXECUTE is bound to; default = minimal_surface>
 
+# Routing
+mode: <direct | delegated>
+execution_difficulty: <mechanical | reasoning | demanding; independent of u>
+delegation_benefit: <work the lead will no longer repeat; for direct, why handoff does not pay>
+executor: <available model ID and effort; explicit user choices override provisional defaults>
+reviewer: <available model ID and effort, or none when review=skip>
+lead_reentry: <architecture/scope decisions, repeated-delivery routing change, or envelope decision; not routine duplicate review>
+
 # Envelope
 sessions: <N — user-approved execution budget, one user checkpoint at plan time>
 expected_commits: ~<N>   # estimate only; never a trigger
@@ -65,10 +77,15 @@ result: pending   # one of: pending | paused | IMPLEMENTED | BLOCKED | DONE
 progress: <segments done / remaining steps — kept current by EXECUTE on pause/continue>
 deviations: none
 validation: pending
+evidence: pending  # required A# -> actual test/assertion or observation -> command/result
+failure_class: none
+consecutive_failures: 0
 
 # Review
 result: pending
 findings: none
+failure_class: none
+consecutive_failures: 0
 
 # Metrics
 <!-- Append one line per worker turn. Purpose: friction detection + later calibration of thresholds (when to run this workflow, envelope sizing) — NOT token accounting.

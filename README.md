@@ -1,6 +1,6 @@
 # Bounded Coding Workflow
 
-`bounded-coding-workflow` is a multi-session protocol for splitting a coding task into deliberate planning, mechanical execution, and optional independent review. It keeps the durable task state in a compact, repository-local handoff file so each worker can continue without relying on prior chat context.
+`bounded-coding-workflow` is a multi-session protocol for splitting a coding task into deliberate planning, bounded implementation and validation, and optional independent review. It keeps the durable task state in a compact, repository-local handoff file so each worker can continue without relying on prior chat context.
 
 中文版请见 [README.zh-CN.md](README.zh-CN.md)。
 
@@ -10,12 +10,18 @@ Use this workflow when separating uncertainty reduction from implementation and 
 
 Do not use it for a single-point bug fix, one-file addition, or other local change where the coordination overhead is larger than the work.
 
+## Model routing and delegation
+
+Execution authority and reasoning effort are separate. Provisional defaults: Luna low for mechanical edits; Luna high for decided behavior that still requires concurrency/failure/test reasoning; Terra medium for focused review. Demanding work may be cheaper to execute directly with a capable model. These are hypotheses to calibrate against whole-task cost and completion evidence, not benchmark claims.
+
+PLAN records the difficulty, selections, delegation benefit, and lead re-entry triggers in Routing. Delegate only if the lead can leave ordinary execution/review loops. When the same required-delivery failure recurs after a repair, change configuration or reduce the unit instead of repeatedly adding instructions. Explicit user constraints and the session envelope remain binding. See [PROMPTS.md](PROMPTS.md).
+
 ## Roles and state flow
 
 The workflow has three roles:
 
 - `PLAN` is the architect. It uses the smallest relevant repository evidence to establish responsibility boundaries, acceptance criteria, design decisions, scope, validation, and an execution contract that a low-authority worker can follow. Repository investigation is evidence for architecture, not the role's end goal.
-- `EXECUTE` is the low-authority implementation worker. It mechanically implements only the approved plan, validates it, and records progress and deviations. It escalates rather than making cross-boundary design choices.
+- `EXECUTE` is the low-authority implementation worker. It implements only the approved plan using the selected reasoning effort, validates it, and records progress and deviations. It escalates rather than making cross-boundary design choices.
 - `REVIEW` is the independent verifier: it checks the implementation, acceptance criteria, scope compliance, and validation evidence without modifying product code.
 
 Normal flow:
