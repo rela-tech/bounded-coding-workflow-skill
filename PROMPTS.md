@@ -1,65 +1,66 @@
-# Session launch prompts
+# Routing and worker prompts
 
-## Model and effort selection (PLAN/lead only)
+Use the model table in [SKILL.md](SKILL.md): PLAN `gpt-6.1-sol` high, default EXECUTE `gpt-6.1-sol` low (clearly defined local tasks: `gpt-6-luna` high), independent REVIEW `gpt-6.1-sol` medium. Repeated execution failures escalate to `gpt-6.1-sol` high as described there. Use generation 6 or later; do not fall back to 5.x defaults. Verify availability on the actual launcher rather than assuming every harness supports the same models.
 
-These are provisional starting policies, not measured capability or cost rankings. Honor explicit user model/effort constraints and verify availability on the host. Model and effort are separate choices; an EXECUTE role restricts design authority, not reasoning. Keep pure workers on their recorded selection instead of making them rediscover routing.
+## Lead dispatch
 
-| Remaining execution work | Starting selection |
-| --- | --- |
-| Mechanical edits using existing patterns and straightforward checks | GPT-5.6 Luna / low |
-| Decided behavior, but concurrency, failure recovery, or effective test design still requires reasoning | GPT-5.6 Luna / high |
-| Several interacting mechanisms with substantial implementation/validation reasoning | Capable direct execution (for example Astra); delegate only with a concrete benefit |
-| Luna high repeats a required-delivery failure after one repair | Re-route to Terra / medium or a smaller complete unit; do not keep the same retry loop |
-| Routine independent focused review | Terra / medium |
+Prefer native worker delegation when it supports the requested models and efforts. Otherwise use the CLI launchers where available and permitted. Pass the role, handoff, and only useful new context. Record executor and reviewer IDs separately so both can resume; review must have its own context.
 
-Prefer direct execution when handing off will leave the lead rereading every patch or designing tests for the executor. PLAN records `mode`, `execution_difficulty`, `delegation_benefit`, executor/reviewer selections, and `lead_reentry` in Routing. Reviewer selection does not authorize parallel workers or override review=skip. A separate Luna reviewer is an experiment for narrow completeness checks, not an assumed reliable semantic gate. Use available deterministic checks for file/state/command facts.
+Keep the task moving after dispatch. Use the harness's completion notification and wait/collect mechanism; where notifications are unavailable, use bounded polling. Do not end the workflow merely because a worker is running. Do not repeatedly read an unchanged event log. On completion, read the concise final message and relevant handoff changes, then route the next productive action.
 
-Low U does not imply mechanical execution. A long plan does not imply delegation pays. Compare whole-task completion cost/time, required-evidence coverage, repair rounds, and lead interventions; collect only already-available accounting. Test these defaults on comparable tasks before claiming Luna high or Terra saves money. Higher Luna effort is the first trial for reasoning-heavy bounded work, not a guaranteed fix for omissions.
+Reuse the existing executor for continuation and ordinary review repairs. An upgrade may resume the same worker with a different model if supported; otherwise launch the upgraded worker with the current handoff and repair evidence. Resume the independent reviewer for rechecks. New sessions are tools for context and model selection, not milestones or accounting units.
 
-For existing handoffs without Routing/evidence fields, PLAN adds them when re-planning; EXECUTE preserves the current explicit/host selection, adds evidence to Execution as needed, and does not restart the plan just to migrate the document.
+Resolve which installed skill the worker will load. When the project intentionally vendors a copy, `assets/sync-install.sh <target-skill-dir>` synchronizes it and `--check` detects divergence. Do not create or synchronize extra installations unless needed by this task.
 
 ## Initial PLAN
+
 ```text
 $bounded-coding-workflow ROLE=PLAN HANDOFF=.agent_worker/tasks/<task>.md
 
 Task:
 <original task>
+
+Resolve material decisions and acceptance, then coordinate execution and independent
+review through completion. Keep the handoff proportional to the work.
 ```
 
-## EXECUTE (pure session)
+## EXECUTE / continuation / repair
+
 ```text
 $bounded-coding-workflow ROLE=EXECUTE HANDOFF=.agent_worker/tasks/<task>.md
 
-This is a pure bounded-coding-workflow EXECUTE session. Do not load or invoke
-any other skill — including using-superpowers and other startup/process skills
-(per using-superpowers' own "User Instructions take precedence" rule, this
-launch prompt is that explicit instruction). Read only the role file, the
-handoff, and the plan anchors; no self-brief, no repo-wide entry flows.
+Implement and validate the agreed task. Read adjacent code and tests as needed;
+follow applicable repository instructions. Continue through logical milestones.
+Update progress and evidence before returning. If a repair repeatedly fails,
+record the attempts and route to the lead for a changed approach.
 
-MANDATORY SESSION CLOSING (do BEFORE your final message):
-1. Verify completion: check every acceptance bullet against the plan's `[A#]` tags;
-   if any required evidence is missing, keep working; pause only for genuine exhaustion, or BLOCKED on a final-session/decision boundary. Never claim completion from the test count alone.
-2. Update the HANDOFF file: `Execution.result/progress/deviations/validation`, `session: (k+1)/N` (consumed count — this turn consumed one), and append one `Metrics` line.
-3. Final message states the status ONLY: `paused k/N` | `IMPLEMENTED` | `DONE` | `BLOCKED` (k = sessions consumed). No free-form prose.
-   "Task completed" is allowed ONLY when all acceptance is met (`IMPLEMENTED`/`DONE`).
-4. Read back saved status, next, session, and Execution.evidence. Code changed without a matching handoff is NOT delivered. Repair metadata locally; do not automatically replay implementation. Repeated same-class delivery failures route to PLAN for a model/effort/unit change.
+New context or review findings, if any:
+<only the concrete correction or next action>
 ```
-Launch with the model AND effort recorded in Routing. Do not downgrade effort because the role is EXECUTE. Keep the session pure: no other skills, no agent frameworks, no repo-wide entry flows, no self-brief. The handoff is the exploration; the executor only translates. Execute segments consecutively while budget allows (a segment boundary is not a stop point). Re-launching the same command continues from the handoff's `Execution.progress` (paused session) — it does not restart the task.
 
-## REVIEW
+## Independent REVIEW
+
 ```text
 $bounded-coding-workflow ROLE=REVIEW HANDOFF=.agent_worker/tasks/<task>.md
-```
-Runs by default (`review=focused`) on the recorded reviewer (starting policy: Terra / medium); skipped only when the handoff explicitly sets `review=skip`. Let this reviewer own routine repair rechecks; the high-tier lead returns only for recorded decision triggers.
 
-## REPLAN
-A handoff revision — format migration, re-segmentation, deepening steps, blocker resolution — is a replan, not a fresh PLAN. Return to the existing PLAN session when possible:
-```text
-$bounded-coding-workflow ROLE=PLAN HANDOFF=.agent_worker/tasks/<task>.md
+Independently inspect the actual change and verify required behavior. Run relevant
+validation, aggregate actionable findings, and record observed results. Rechecks
+focus on unresolved findings and the repair diff.
 ```
 
-## REVIEW FIX
-If REVIEW routes `status=BLOCKED`, `next=EXECUTE`, the executor may resume the recorded local fixes within the envelope. Reuse its session when useful, unless recurring failures require a recorded configuration change:
-```text
-$bounded-coding-workflow ROLE=EXECUTE HANDOFF=.agent_worker/tasks/<task>.md
+## CLI path
+
+The scripts accept `<repo-root> <handoff-path> <role> <prompt-file> [model] [effort]`.
+Pass the Routing model and effort explicitly. Their role-aware defaults are Sol 6.1 low for execute labels, Sol 6.1 medium for review labels, and Sol 6.1 high for plan labels. Local Luna tasks and escalated execution always supply the recorded model AND effort explicitly, including on resume; omitted arguments use role defaults, not the previous worker configuration.
+
+```bash
+assets/launch-worker.sh <repo-root> <handoff-path> execute <prompt-file> gpt-6.1-sol low
+assets/launch-worker.sh <repo-root> <handoff-path> review <prompt-file> gpt-6.1-sol medium
+assets/resume-worker.sh <repo-root> <handoff-path> execute <repair-prompt-file> gpt-6.1-sol high
 ```
+
+Run the launcher as a tracked job when the harness requires it for completion notifications. It remains attached to the worker until exit and records the thread ID beside the handoff in `<handoff>.workers`. The registry's role key distinguishes executor and reviewer; resume using the original role key. Record the matching ID in Routing when it is available. Read the final-message file first; inspect event output only for a concrete failure or missing state.
+
+The launcher sets the repository working directory and workspace-write sandbox. Resume changes directory first and uses `-c sandbox_mode=workspace-write` because its CLI shape differs from initial launch. Verify compatibility with the installed CLI when dispatch fails; do not assume all versions have identical flags. The launcher needs permission to initialize CLI state, and reviewers need shell access for verification. Do not silently bypass permission failures.
+
+Worker accounting may be useful when already available, but collecting or formatting token metrics is not part of task acceptance. Evaluate routing by completion quality, progress, and repair behavior; model price alone does not establish ROI.

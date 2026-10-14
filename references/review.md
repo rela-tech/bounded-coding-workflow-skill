@@ -1,39 +1,24 @@
 # ROLE=REVIEW
 
-Goal: independently verify the implementation without replaying PLAN. Do not modify product code. REVIEW runs by default (level `focused`); it is skipped only when the handoff explicitly sets `review=skip`.
+Use `gpt-6.1-sol` / `medium` in a context independent of PLAN and EXECUTE. Do not modify product code. Review defaults to focused; skip only when explicitly recorded.
 
-Require `status=IMPLEMENTED` and `next=REVIEW`.
+Read the goal, acceptance, decisions, scope, relevant execution evidence, and actual diff. Follow additional repository evidence where a concrete concern requires it. Verify that delivery is complete before a semantic pass; aggregate missing deliverables and return them to EXECUTE without pretending a full review occurred.
 
-Read in this order:
-1. Goal + Acceptance;
-2. Decisions + Plan + Routing (or current user/host selection for older handoffs);
-3. Scope compliance: `minimal_surface` vs `plan_surface` vs `approved_surface` (fallback = `minimal_surface` when no scope_decision exists) — determines the surface EXECUTE was bound to;
-4. Execution + Deviations + validation results + session progress;
-5. git diff and changed code;
-6. only additional repo evidence needed to verify a concrete concern.
+Independently check correctness, regressions, contract/scope compliance, and whether tests actually demonstrate required behavior. Run relevant recorded validation commands yourself and record actual results; do not treat the executor's report as proof. Where a command cannot safely run or the environment is unavailable, identify the unverified acceptance and route the necessary action rather than declaring clean. Do not repeat expensive unrelated checks merely for ceremony.
 
-Before a semantic pass, verify required delivery/evidence is present and routing matches. If required tests or validation are missing, aggregate the missing items and return to EXECUTE (or PLAN if the envelope is exhausted); do not spend a high-tier pass rediscovering the plan.
+For a nonzero analyzer/linter result, distinguish existing baseline findings from regressions using evidence. If changed snapshots/goldens may incorporate pre-existing drift, compare the base state and report it; commit chronology alone does not establish whether a baseline passed.
 
-For `focused`, stay diff-centered.
-For `deep`, widen only along the stated risk boundary or evidence that challenges an architecture assumption.
+Focused review stays centered on changed behavior and affected callers. Deep review widens along concrete security, data-loss, migration, or architectural risks. Code volume alone does not require deep review or a second reviewer.
 
-Prioritize correctness, acceptance mismatch, surface compliance (the diff must not enlarge the approved surface), regression/contract/data/concurrency/security risk, unsupported deviations, missing/misleading validation, and unplanned design (robustness/abstraction EXECUTE added beyond the plan).
-Check whether each required evidence item actually proves its behavior, not just whether its title mentions it. Keep optional strengthening non-blocking unless a concrete defect/risk makes it necessary; do not invent new acceptance requirements during repair.
+Complete the initial review of a complete delivery and aggregate actionable findings. Do not stop after the first defect. Keep optional improvements non-blocking unless a concrete acceptance or regression risk requires them. Local implementation choices are not unplanned design; do not invent acceptance criteria during repair.
 
-Surface compliance is checked against the recorded `approved_surface` (or `minimal_surface`), not by re-litigating the chosen design: a design the user approved is not a defect just because another design exists.
+Routing:
+- clean and verified: DONE / DONE;
+- local implementation or missing evidence: BLOCKED / EXECUTE, with concrete findings;
+- plan/architecture/scope defect: BLOCKED / PLAN, stating the decision needed and whether code is affected;
+- repeated execution failure meeting SKILL.md's threshold: BLOCKED / PLAN, preserving repair history;
+- user-only dependency: BLOCKED / USER.
 
-Use the reviewer selected in Routing. The reviewer owns routine fix/recheck cycles; do not wake a high-tier lead for a second complete review by default. On repair, retain the prior complete review and inspect open findings, the new diff, and any regressions introduced by it. Widen only when that evidence requires it.
+Retain stable finding identifiers through repairs. Feed recurring findings about the same underlying behavior into Execution's failure history; do not reset history on a new review turn. Recheck open findings and the repair diff, widening only for new evidence. The lead routes repairs and resolves decisions; it need not perform another full review.
 
-**For a complete delivery, finish the full initial semantic pass before deciding an outcome.** Finish reading all six inputs (Goal/Acceptance, Decisions/Plan, scope, Execution/Deviations/validation, git diff, and any concrete-concern evidence) and collect *every* finding. Do not block on the first defect found — a partial review that reports one issue and stops produces a fix-then-rediscover ping-pong. Aggregate all findings, then emit exactly one outcome.
-
-Outcome:
-- clean -> `status=DONE`, `next=DONE`;
-- local implementation defect -> `status=BLOCKED`, `next=EXECUTE` when sessions remain; include stable failure class and concrete fix; same class recurring after a repair -> PLAN for routing change;
-- unapproved surface enlargement or unplanned design by EXECUTE/PLAN -> `status=BLOCKED`, `next=PLAN` (or `next=USER` when only the user may approve the enlargement);
-- invalid/unknown architecture assumption -> `status=BLOCKED`, `next=PLAN`;
-- envelope/size mismatch (plan under-sized for the delivered surface) -> `status=BLOCKED`, `next=PLAN` (re-segment; user alignment is a plan-window activity);
-- user/environment/external blocker -> `status=BLOCKED`, `next=USER`.
-
-Blocker paths never route into REVIEW: REVIEW only ever runs on `IMPLEMENTED`.
-
-When clean, write a one-line result. When blocked, write the *complete* findings list — every defect, with severity and the fix or decision each requires — so EXECUTE/PLAN can resolve all of them in one pass; never report a single finding and stop. A completeness rejection lists all missing deliverables without pretending a semantic review was completed. Record failure class and consecutive count in Review, carrying the previous same-class repair forward; a different class starts at one, a clean review resets to zero. Append one metric line.
+Record concise findings with severity, code anchors, evidence, and the required fix or decision. A clean result states what was verified and any material limitation. Correct trivial report metadata locally; a formatting defect alone does not require another worker session.

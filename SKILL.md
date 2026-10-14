@@ -1,69 +1,82 @@
 ---
 name: bounded-coding-workflow
-description: Explicit multi-session coding protocol for PLAN, EXECUTE, and REVIEW workers sharing a compact repo-local handoff. Use when separating uncertainty reduction from implementation/review is expected to reduce total completion cost.
+description: Coordinate coding tasks through deliberate planning, bounded execution, and independent review with a compact repo-local handoff. Use when separating design decisions, implementation, and verification helps complete a task reliably.
 ---
 
 # Bounded coding workflow
 
-Inputs:
-- `ROLE=PLAN|EXECUTE|REVIEW`
-- `HANDOFF=<repo-relative path>`
-- Initial PLAN only: the task request
+Complete the user's task with verified results. Bound scope and decision authority; session count and token usage are not success criteria. Use enough investigation, implementation, and repair to finish. Avoid coordination that does not advance the result.
 
-Do not infer a missing role or handoff path.
+Inputs: `ROLE=PLAN|EXECUTE|REVIEW`, `HANDOFF=<repo-relative path>`, and the task request for initial planning. A lead invoked without a role starts with PLAN and chooses a task-specific handoff path; a dispatched worker uses the role and path it receives. Read the handoff and the active role's reference: [PLAN](references/plan.md), [EXECUTE](references/execute.md), or [REVIEW](references/review.md). The lead also reads [PROMPTS.md](PROMPTS.md) for dispatch mechanics and model routing.
 
-The repo is the source of truth. The handoff is both a **design document** and the **cross-worker execution contract**: PLAN resolves design uncertainty; EXECUTE implements and validates the decided behavior; REVIEW checks delivery against evidence. Optimize total completion cost, including lead rereads and repair cycles, rather than the executor's unit price. Session context is only a cache: keep the handoff sufficient for another worker to continue.
+## Model roles
 
-Read this file, the handoff if it exists, exactly one role file (`references/plan.md`, `execute.md`, or `review.md`), and only repo evidence needed for that role. Detailed role contracts live in the role files; PLAN/lead also reads `PROMPTS.md` for model/effort routing; pure workers use the selection recorded in the handoff.
+| Work | Default model | Effort |
+| --- | --- | --- |
+| PLAN and substantive lead decisions | `gpt-6.1-sol` | `high` |
+| EXECUTE and ordinary repairs | `gpt-6.1-sol` | `low` |
+| Clearly defined local implementation | `gpt-6-luna` | `high` |
+| Independent REVIEW | `gpt-6.1-sol` | `medium` |
+| Escalated execution | `gpt-6.1-sol` | `high` |
 
-EXECUTE and REVIEW are **pure sessions**: their inputs are whitelisted in their role files, and repo-wide entry flows (e.g. knowledge-context bootstrap) are exempt for them. EXECUTE is low authority but feedback-capable: never designs, escalates with evidence.
+Use Luna high only for clearly defined local work with established patterns and straightforward verification. Default to Sol low when implementation spans interacting modules or requires substantial test design or debugging. Choose based on the remaining work, not file count alone. Resume repairs at the recorded selection; do not automatically downgrade after escalation.
 
-Do not spawn subagents by default. Delegate only when coordination/context cost is likely lower than doing the bounded work directly. Task size or a long plan alone is not a delegation benefit. Record what the lead will stop doing; if the lead must repeatedly reconstruct the implementation or design its tests, prefer direct execution by a capable model.
+Use generation 6 or later. These are configured choices, not measured ROI claims. Honor explicit user overrides and verify that the selected launcher supports the model. Do not silently substitute a different model. If the default is unavailable, report the mismatch and choose an available generation-6-or-later alternative within the user's authorization; ask only when that choice requires user input. REVIEW uses a separate worker context from whoever planned or implemented the change; changing a role label in the same context is not independent review.
 
-Small changes — single-point bugfixes, one-file additions, local tweaks — do not need this workflow. Run it when separating uncertainty reduction from implementation is expected to reduce total cost.
+## Lead / dispatcher responsibilities
 
-## State
+Own progress through delivery, not just dispatch. Default to the role split above for substantial work. Keep the lead's context for planning, resolving decisions, and coordinating the result.
 
-Normal: `PLAN -> READY -> EXECUTE -> DONE`
-With review: `PLAN -> READY -> EXECUTE -> IMPLEMENTED -> REVIEW -> DONE`
-Exception: `EXECUTE|REVIEW -> BLOCKED -> PLAN|EXECUTE|USER`
+- Give EXECUTE a usable decision and acceptance contract, then let it implement, debug, and validate. Do not shadow its work or reconstruct every patch.
+- On worker return, read the concise result and relevant handoff updates. Route concrete next work: continue, repair, decide, review, or deliver. Do not perform a second full review after the independent reviewer.
+- Fix your own plan text and trivial metadata locally. If a plan correction affects code, have the current executor implement and validate it, or make a genuinely small direct correction and obtain independent review of the changed result. Never send a text-only correction through a fresh implementation pass; never send affected but unfixed code straight to review.
+- User-supplied decisions update the contract directly. Resume implementation without a ceremonial planning pass or another approval of already-authorized work.
+- Reuse productive worker sessions. Start a new context when independence, model switching limitations, stale context, or an actual failure makes it useful. Role transitions and milestones do not automatically require new sessions.
+- Keep dispatch live: wait for or collect completion and continue the workflow. Launching a worker is not task completion. Record recoverable worker IDs and the next action before a real interruption.
+- Ask the user only for missing requirements, authority, or choices that materially change the outcome. Ordinary continuation, local implementation choices, and an estimated milestone overrun need no approval.
 
-**Pause vs BLOCKED**: within the approved envelope, an EXECUTE session that runs out of room *pauses* (`session: k/N` = consumed EXECUTE sessions, keeps `status=READY`, `next=EXECUTE`) — automatic continuation, not a blocker. Status values are `PLANNING/READY/IMPLEMENTED/DONE/BLOCKED`; `next` carries `PLAN|EXECUTE|REVIEW|USER|DONE` (`DONE` only for terminal completion) — never mix the two. BLOCKED records a decision or an explicit review repair: local review fixes -> EXECUTE; `U>=2` with evidence -> PLAN; envelope exceeded or final-session DoD unmet -> PLAN (re-plan; user alignment is a plan-window activity); user-only blockers (requirements/permissions/environment) -> USER.
+For a small local edit or explicit user request, use `mode: direct` in the existing context. Do not turn that exception into the lead routinely doing the executor's work. Do not spawn additional planners, auditors, or parallel workers merely to satisfy a process.
 
-Validation is part of EXECUTE.
+## Boundaries and continuation
 
-## Gates
+PLAN settles behavior, contracts, scope, and material risks. EXECUTE owns implementation details and local debugging, including reading adjacent callers, tests, and dependencies needed to do the job. It may adapt stale anchors and choose private helpers or test structure without escalating. Changed public behavior, architecture, ownership, or scope requires a lead decision.
 
-**Uncertainty gate** — `U` = remaining engineering uncertainty (`0` fully decided, `1` local choices, `2` cross-boundary/contract/behavior decision, `3` goal/root-cause/architecture unresolved). PLAN emits `READY` only when `U<=1`. EXECUTE solves problems inside decided architecture; a `U>=2` need blocks with evidence instead of replanning.
+Reuse existing responsibilities and implement the smallest complete solution. Do not silently add unrelated subsystems, durable-format changes, or dependencies. If these are already authorized by the user's task, document and proceed; otherwise resolve the material scope decision before implementing. Repository evidence explains a proposal; it does not itself authorize scope expansion.
 
-**Execution difficulty** — assess separately from `U`: `mechanical` (existing patterns and straightforward verification), `reasoning` (decided behavior but concurrency, failure recovery, or nontrivial test design), `demanding` (several interacting mechanisms require substantial implementation and validation reasoning). Low uncertainty does not imply low effort. EXECUTE is low authority, not necessarily low reasoning. PLAN records difficulty, model/effort, delegation benefit, and lead re-entry conditions in `Routing`; use the provisional defaults in `PROMPTS.md`.
+Sessions are a runtime detail. Work through logical milestones consecutively, continue across context limits, and resume repairs until acceptance is met. There is no default `k/N` cap, per-session plan segmentation, or mandatory user checkpoint. Explicit user budgets and platform limits remain binding. Pause on a real runtime interruption; block on an unresolved decision, failed repair needing rerouting, or external dependency, not a milestone boundary.
 
-**Scope gate** — core invariant: *PLAN may enlarge the minimal surface only with explicit repo evidence or explicit user approval; EXECUTE may never enlarge the approved surface.* `minimal_surface` = fewest architectural responsibilities satisfying the DoD; existing responsibilities stay reused by default. Hard triggers (any hit forces `next=USER`; never self-approve): a new architectural subsystem; persistence/schema or durable-format change. Soft warnings (record in Risks/Open; READY still allowed with justification): a new runtime dependency; >5 plan steps; thin delta rationale.
+Follow applicable repository instructions. Skip optional startup rituals, repeated briefs, and unrelated skills. This workflow does not override higher-priority instructions or required repository checks; integrate required deliverables once instead of reproducing the repository process in every worker.
 
-**Envelope (size gate)** — PLAN organizes the Plan into session-sized segments (`[s<k>]`), each one EXECUTE session's worth, preferring vertical (end-to-end) segments. The envelope = the sessions approved at the single user checkpoint; afterwards the execution window targets zero user interventions. Within the envelope EXECUTE pauses/continues freely; exceeding it routes `BLOCKED -> PLAN`. Segments are plan-internal structure, never parallel-work distribution units.
+## State and evidence
 
-## Review
+Normal: `PLANNING -> READY -> IMPLEMENTED -> DONE`.
+`next`: `PLAN|EXECUTE|REVIEW|USER|DONE`.
 
-`review=skip|focused|deep`, default `focused` (REVIEW runs by default; `skip` only when the handoff explicitly sets it). `focused`: shared behavior/contract touched, meaningful deviations, regression risk. `deep`: security/permissions/data-loss/migration, weak validation at high risk, evidence questioning architecture assumptions. Code volume alone never raises the level. Blocker paths never route through REVIEW.
+- READY / EXECUTE: implementation or continuation is in progress; a runtime pause remains READY.
+- IMPLEMENTED / REVIEW: all required acceptance is met and execution evidence is recorded.
+- DONE / DONE: independent review passed, or execution passed with explicit `review: skip`.
+- BLOCKED: record the concrete evidence and smallest next action. Local review repairs route to EXECUTE, decisions or repeated execution failures to PLAN, and user-only blockers to USER.
 
-## Delivery and escalation
+Default `review: focused`; use `deep` for concrete security, data-loss, migration, or architectural risk. Review depth does not automatically add another reviewer. Missing acceptance evidence returns to execution. Review independently inspects changed behavior and runs relevant verification; it must distinguish observed results from unverified claims.
 
-Before semantic review, check delivery completeness against required acceptance IDs, validation results, and handoff state. Use existing automated checks for mechanical facts where available; a passing test count or an IMPLEMENTED message is not evidence of acceptance. Incomplete delivery returns to EXECUTE within the envelope, rather than triggering a fresh high-tier design review.
+## Repeated execution failure
 
-Track a stable failure class (for example `missing-required-tests`, `invalid-test-causality`, `handoff-state-mismatch`) and consecutive occurrences in `Execution`. If the same class recurs after one repair attempt, stop relaunching the same model/effort with a longer checklist. PLAN/lead selects higher effort, a stronger executor, or a smaller complete unit and records the change before resuming. Ordinary isolated bugs do not automatically require escalation. Explicit user model/effort limits and the approved envelope still apply; model changes do not reset consumed sessions. Do not enlarge the envelope merely to keep an ineffective configuration retrying.
+Allow one ordinary repair of a substantive implementation or validation failure. If the same underlying failure persists after that repair, or two successive repair attempts make no meaningful progress on required acceptance, the lead intervenes before another attempt. Renaming a finding, restarting a worker, or switching models does not erase the history.
 
-The selected reviewer owns ordinary review/fix/recheck cycles. High-tier lead re-entry is for the recorded decision triggers, not routine duplicate review.
+Classify the cause using the failure and repair evidence:
+- execution/reasoning failure: escalate from either `gpt-6.1-sol` low or `gpt-6-luna` high to `gpt-6.1-sol` high;
+- wrong or incomplete plan: correct the decision, then resume the appropriate executor;
+- environment/permissions/external dependency: resolve the actual dependency; model escalation is not a remedy;
+- overly coupled work: isolate a smaller verifiable unit while preserving the full task's acceptance.
 
-## Ownership
+A repeated failure needs a changed approach, not a longer checklist or an unchanged fresh executor session. If escalated execution also fails after a targeted repair, diagnose the cause and change strategy; use an available generation-6-or-later model when justified and authorized. Do not cycle models blindly or stop merely because an automatic retry count elapsed. Surface a real blocker when no productive authorized action remains.
 
-PLAN owns: Goal, Acceptance, Facts, Decisions, Non-goals, Scope, Plan (segments + boundary defaults), Validate, Routing, envelope, Risks/Open. EXECUTE owns: Execution, Deviations, validation results, evidence-based escalations — bound to `approved_surface`, never enlarging it and never adding unplanned design. REVIEW owns: Review. Any role may update status/routing, `U`, risk/review level with evidence, append a blocker, append one metric line. Never silently rewrite another role's decision; record evidence and route to PLAN.
+Record the underlying issue, attempted repair, observed result, and routing change in Execution. Count failed repair attempts, not expected red tests, normal exploratory debugging, unrelated isolated bugs, or cosmetic handoff omissions. Reviewer findings about the same unresolved behavior feed the same history. Reset that issue's count only after verified resolution. Respect explicit model restrictions when escalating.
 
-## Handoff hygiene
+## Handoff
 
-Two layers with different lifetimes:
-- **Stable (design document — never pruned)**: Goal, Acceptance, Decisions (rationale where a plausible wrong choice exists), Non-goals, Scope, Plan, Validate, Routing, Risks/Open.
-- **Volatile (runtime state — replace stale, don't accumulate)**: status/next, session progress, Execution, Deviations, Review, Metrics, Current Blocker.
+Use [assets/handoff-template.md](assets/handoff-template.md) as a starting point, not a form to fill for its own sake. Preserve goals, acceptance, decisions, scope, meaningful evidence, and current progress. Omit unused optional sections. Keep updates proportional to new information; no per-turn metric line, read counts, session counters, or status-only response requirement.
 
-Rules: `path:symbol` anchors; never paste source excerpts, chain-of-thought, or a discarded-alternatives diary; record in `Decisions`/`delta_justification` the materially relevant competing mechanisms and the evidence that rejects them (so REVIEW can see what was surveyed); machine fields (frontmatter keys, status values, section titles) in English, prose may use the team language, anchors verbatim; a blocker records only evidence, conflict, and the smallest decision needed.
+PLAN owns decisions and scope; EXECUTE records progress, deviations, validation, and failure history; REVIEW records findings and verification. Any role may repair mechanical metadata, but changes to a substantive decision must be visible and resolved with the lead. Use repo-relative anchors; avoid source dumps and exploration diaries. Final worker messages give status, material results, and the next action or blocker in a few sentences.
 
-Append one compact metric line per worker turn under `# Metrics` — friction detection and threshold calibration, not mandatory token accounting. When already available, compare whole-task cost/time and lead interventions across configurations; include cached/uncached accounting consistently and do not infer savings from model unit prices. Do not fetch usage just to populate metrics. `result` uses the fixed vocabulary (PLAN `READY|BLOCKED|REPLAN-READY`, EXECUTE `paused|IMPLEMENTED|BLOCKED`, REVIEW `clean|BLOCKED`); `friction` is a stable, dedupe-able label. Use `?` when a value is not cheaply available; never run tools merely to collect metrics.
+For older handoffs, continue from their existing decisions and progress without a format-migration task. Treat protocol-generated session envelopes as historical estimates, unless they represent an explicit user limit. Preserve genuinely user-imposed limits; do not reinterpret them away. Update old model selections to the defaults above unless the user explicitly pinned a different model.
