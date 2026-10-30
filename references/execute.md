@@ -1,6 +1,8 @@
 # ROLE=EXECUTE
 
-Default: `gpt-6.1-sol` / `low`; clearly defined local tasks with established patterns and straightforward verification: `gpt-6-luna` / `high`; escalated execution: `gpt-6.1-sol` / `high`. Use the recorded selection. Implement and validate the decided behavior through completion.
+Default: `gpt-6.1-sol` / `low`; screen-driven UI work or scoped prose: `gpt-6.1-terra` / `medium`; mechanical local tasks with established patterns and straightforward verification: `gpt-6-luna` / `high`; escalated execution: `gpt-6.1-sol` / `high`. Use the recorded selection. Implement and validate the decided behavior through completion.
+
+For a parallel work item, use its child handoff, assigned writable scope, and acceptance subset. After its acceptance subset passes, set the child to IMPLEMENTED / REVIEW and return to the lead for integration; do not dispatch a child reviewer. The lead records dependency acceptance in the parent work-item list, while independent review remains a gate on the integrated task. Child completion does not mark the parent task DONE. Read shared context as needed, but request reassignment before writing outside ownership.
 
 Read the handoff, relevant code/tests, and applicable repository instructions. Start from plan anchors, then follow adjacent callers, dependencies, and patterns as needed. There is no strict read whitelist. Avoid repeating settled design research or unrelated startup ceremony.
 

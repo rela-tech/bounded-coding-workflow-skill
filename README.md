@@ -10,11 +10,12 @@
 | --- | --- | --- |
 | PLAN / substantive lead decisions | `gpt-6.1-sol` | `high` |
 | EXECUTE / ordinary repairs | `gpt-6.1-sol` | `low` |
-| Clearly defined local implementation | `gpt-6-luna` | `high` |
+| Screen-driven UI fixes, visual checks, and scoped prose | `gpt-6.1-terra` | `medium` |
+| Mechanical local implementation with established patterns | `gpt-6-luna` | `high` |
 | Independent REVIEW | `gpt-6.1-sol` | `medium` |
 | Escalated execution | `gpt-6.1-sol` | `high` |
 
-Use Luna high only for clearly defined local work with established patterns and straightforward verification. Default to Sol low when implementation spans interacting modules or requires substantial test design or debugging. Choose based on the remaining work, not file count alone. Resume repairs at the recorded selection; do not automatically downgrade after escalation.
+Use Terra medium when screenshots, application state, or prose are the main evidence and the behavior is already decided. A visual pass does not replace code verification or independent review. Use Luna high for mechanical local work with established patterns and straightforward verification. Default to Sol low when implementation spans interacting modules or requires substantial test design or debugging. Choose based on the remaining work, not file count alone. Resume repairs at the recorded selection; do not automatically downgrade after escalation.
 
 Defaults use generation 6 or later. These are workflow choices, not measured ROI rankings. Review needs a worker context independent of planning and implementation; changing the role label in the same context is not independent review.
 
@@ -27,6 +28,8 @@ There is no default `k/N` session cap or session-sized plan segmentation. Work t
 If the same substantive issue persists after one repair, or two successive repairs make no meaningful acceptance progress, the lead diagnoses the cause: upgrade execution failures to Sol 6.1 high, correct plan defects, resolve environment dependencies, or isolate a smaller verifiable unit. Renaming an issue, restarting, or changing models does not clear its history. Normal red tests during development and formatting issues do not count toward escalation.
 
 Normal flow is `PLAN -> EXECUTE -> REVIEW -> DONE`. Review defaults to focused and is omitted only with explicit `review: skip`. A phase ending is not task completion: the lead collects results, routes repairs and rechecks, and continues until delivery or a real blocker.
+
+Independent work may use dependency-aware dispatch with disjoint write ownership and child handoffs. One executor integrates the results and verifies combined acceptance before independent review. See [PROMPTS.md](PROMPTS.md#dependency-aware-orchestration) for routing sources (checked 2026-10-30), recovery, and escalation to Astra for residual reasoning difficulty. Effort choices remain workflow policy, not measured optima.
 
 ## Quick start
 

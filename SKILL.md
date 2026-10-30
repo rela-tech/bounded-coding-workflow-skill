@@ -15,13 +15,16 @@ Inputs: `ROLE=PLAN|EXECUTE|REVIEW`, `HANDOFF=<repo-relative path>`, and the task
 | --- | --- | --- |
 | PLAN and substantive lead decisions | `gpt-6.1-sol` | `high` |
 | EXECUTE and ordinary repairs | `gpt-6.1-sol` | `low` |
-| Clearly defined local implementation | `gpt-6-luna` | `high` |
+| Screen-driven UI fixes, visual checks, and scoped prose | `gpt-6.1-terra` | `medium` |
+| Mechanical local implementation with established patterns | `gpt-6-luna` | `high` |
 | Independent REVIEW | `gpt-6.1-sol` | `medium` |
 | Escalated execution | `gpt-6.1-sol` | `high` |
 
-Use Luna high only for clearly defined local work with established patterns and straightforward verification. Default to Sol low when implementation spans interacting modules or requires substantial test design or debugging. Choose based on the remaining work, not file count alone. Resume repairs at the recorded selection; do not automatically downgrade after escalation.
+Use Terra medium when screenshots, application state, or prose are the main evidence and the behavior is already decided. A visual pass does not replace code verification or independent review. Use Luna high for mechanical local work with established patterns and straightforward verification. Default to Sol low when implementation spans interacting modules or requires substantial test design or debugging. Choose based on the remaining work, not file count alone. Resume repairs at the recorded selection; do not automatically downgrade after escalation.
 
 Use generation 6 or later. These are configured choices, not measured ROI claims. Honor explicit user overrides and verify that the selected launcher supports the model. Do not silently substitute a different model. If the default is unavailable, report the mismatch and choose an available generation-6-or-later alternative within the user's authorization; ask only when that choice requires user input. REVIEW uses a separate worker context from whoever planned or implemented the change; changing a role label in the same context is not independent review.
+
+The task routing rationale, fallback rules, and source date live in [PROMPTS.md](PROMPTS.md). Effort is a workflow choice; intersect it with the actual launcher’s supported values. Do not infer effort support from another surface.
 
 ## Lead / dispatcher responsibilities
 
@@ -36,6 +39,8 @@ Own progress through delivery, not just dispatch. Default to the role split abov
 - Ask the user only for missing requirements, authority, or choices that materially change the outcome. Ordinary continuation, local implementation choices, and an estimated milestone overrun need no approval.
 
 For a small local edit or explicit user request, use `mode: direct` in the existing context. Do not turn that exception into the lead routinely doing the executor's work. Do not spawn additional planners, auditors, or parallel workers merely to satisfy a process.
+
+For useful independent work, use the dependency and ownership rules in [PROMPTS.md](PROMPTS.md#dependency-aware-orchestration). Keep a single executor for coupled work; parallelism is optional and must fit runtime capacity.
 
 ## Boundaries and continuation
 
@@ -64,7 +69,7 @@ Default `review: focused`; use `deep` for concrete security, data-loss, migratio
 Allow one ordinary repair of a substantive implementation or validation failure. If the same underlying failure persists after that repair, or two successive repair attempts make no meaningful progress on required acceptance, the lead intervenes before another attempt. Renaming a finding, restarting a worker, or switching models does not erase the history.
 
 Classify the cause using the failure and repair evidence:
-- execution/reasoning failure: escalate from either `gpt-6.1-sol` low or `gpt-6-luna` high to `gpt-6.1-sol` high;
+- execution/reasoning failure: escalate from `gpt-6.1-sol` low, `gpt-6.1-terra` medium, or `gpt-6-luna` high to `gpt-6.1-sol` high;
 - wrong or incomplete plan: correct the decision, then resume the appropriate executor;
 - environment/permissions/external dependency: resolve the actual dependency; model escalation is not a remedy;
 - overly coupled work: isolate a smaller verifiable unit while preserving the full task's acceptance.
@@ -79,4 +84,4 @@ Use [assets/handoff-template.md](assets/handoff-template.md) as a starting point
 
 PLAN owns decisions and scope; EXECUTE records progress, deviations, validation, and failure history; REVIEW records findings and verification. Any role may repair mechanical metadata, but changes to a substantive decision must be visible and resolved with the lead. Use repo-relative anchors; avoid source dumps and exploration diaries. Final worker messages give status, material results, and the next action or blocker in a few sentences.
 
-For older handoffs, continue from their existing decisions and progress without a format-migration task. Treat protocol-generated session envelopes as historical estimates, unless they represent an explicit user limit. Preserve genuinely user-imposed limits; do not reinterpret them away. Update old model selections to the defaults above unless the user explicitly pinned a different model.
+For older handoffs, continue from their existing decisions and progress without a format-migration task. Treat protocol-generated session envelopes as historical estimates, unless they represent an explicit user limit. Preserve genuinely user-imposed limits; do not reinterpret them away. Reassess old model selections against the remaining work; preserve explicit user pins and recorded escalations. Record any routing change rather than silently overwriting it.

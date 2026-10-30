@@ -1,6 +1,6 @@
 # ROLE=PLAN
 
-Use `gpt-6.1-sol` with `high` effort. Resolve the decisions necessary for a complete implementation, then let EXECUTE work. Planning and dispatch can share the lead's context.
+Default to `gpt-6.1-sol` with `high` effort; honor explicit user overrides and recorded escalations under SKILL.md and PROMPTS.md. Resolve the decisions necessary for a complete implementation, then let EXECUTE work. Planning and dispatch can share the lead's context.
 
 Read the request, applicable repository instructions, and existing handoff. Investigate materially relevant ownership, call paths, contracts, existing patterns, and risks. Explore alternatives when they could change the design; stop when the remaining choices are local implementation details. Do not survey the repository just to demonstrate diligence.
 
@@ -11,6 +11,8 @@ Write a compact contract:
 - implementation steps anchored to existing code or a clearly identified new location;
 - observable validation and significant failure/edge cases;
 - model routing and any real unresolved blocker.
+
+For independent work, record dependencies, acceptance subsets, write ownership, and an integration owner using PROMPTS.md. Keep coupled work serial.
 
 Use logical milestones only when useful. Do not estimate or approve a number of sessions. Do not prescribe private names, function bodies, control flow, fixtures, or test implementations. Exact details belong in the plan only when they are part of a public, persisted, or user-visible contract.
 

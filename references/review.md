@@ -1,6 +1,8 @@
 # ROLE=REVIEW
 
-Use `gpt-6.1-sol` / `medium` in a context independent of PLAN and EXECUTE. Do not modify product code. Review defaults to focused; skip only when explicitly recorded.
+Default to `gpt-6.1-sol` / `medium` in a context independent of PLAN and EXECUTE; honor explicit user overrides and recorded routing. Consider high effort for concrete deep-review risk when supported and recorded. Do not modify product code. Review defaults to focused; skip only when explicitly recorded.
+
+Review the integrated result, not only individual worker outputs. Visual evidence from Terra can support UI findings but does not replace semantic verification.
 
 Read the goal, acceptance, decisions, scope, relevant execution evidence, and actual diff. Follow additional repository evidence where a concrete concern requires it. Verify that delivery is complete before a semantic pass; aggregate missing deliverables and return them to EXECUTE without pretending a full review occurred.
 

@@ -22,12 +22,20 @@ review: focused
 mode: delegated
 planner: gpt-6.1-sol / high
 executor: gpt-6.1-sol / low
-# Use gpt-6-luna / high for clearly defined local tasks; escalate failures to gpt-6.1-sol / high.
+# Terra medium: screen-driven/scoped prose; Luna high: mechanical local work.
+# Sol high: reasoning escalation; preserve recorded upgrades on resume.
 reviewer: gpt-6.1-sol / medium
 launcher: <native delegation or CLI>
 executor_session: none
 reviewer_session: none
 # Record explicit user limits only when provided. No default session envelope.
+
+<!-- Optional for parallel work; parent list is lead-owned. Each writer uses a child handoff.
+# Work items
+| ID | Depends on | Acceptance | Writable scope | Owner/session | Model/effort | Status | Child handoff/evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+Record one integration owner and combined verification before parent REVIEW.
+-->
 
 # Plan
 1. `<path>:<symbol-or-location>` [A1] — <behavior and material edge cases>
